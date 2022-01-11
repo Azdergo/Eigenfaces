@@ -4,11 +4,14 @@ import cv2 as cv
 import numpy as np
 from PIL import Image
 
-PATH          = os.getcwd()
-DATASET_NAME  = "dataset"
-DATASET_PATH  = PATH + "/" + DATASET_NAME
-ANALYSED_NAME = "modified"
-ANALYSED_PATH = DATASET_PATH + "/" + ANALYSED_NAME
+PATH              = os.getcwd()
+DATASET_NAME      = "dataset"
+DATASET_PATH      = PATH + "/" + DATASET_NAME
+ANALYSED_NAME     = "modified"
+ANALYSED_PATH     = DATASET_PATH + "/" + ANALYSED_NAME
+VECTOR_NAME       = "vector"
+VECTOR_PATH       = DATASET_PATH + "/" + VECTOR_NAME
+IMAGE_VECTOR_NAME = "image_vector.jpg"
 
 DEST_WIDTH = 178
 DEST_HEIGHT = 218
@@ -22,13 +25,13 @@ EYE_CASCADE  = cv.CascadeClassifier('haarcascade_eye.xml')
 def distance(p1, p2):
     return math.sqrt( (p1[0] - p2[0]) ** 2 + (p1[1] - p2[1]) ** 2)
 
-def init_result_folder():
-    if not os.path.exists(ANALYSED_PATH):
-        os.makedirs(ANALYSED_PATH)
+def create_folder(path):
+    if not os.path.exists(path):
+        os.makedirs(path)
     
 
-def get_images_list():
-    return [f for f in os.listdir(DATASET_PATH) if os.path.isfile(os.path.join(DATASET_PATH, f))]
+def get_images_list(path):
+    return [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
 
 def face_detection(image_name):
     path = DATASET_PATH + "/" + image_name
@@ -41,9 +44,9 @@ def face_detection(image_name):
         roi_gray = gray[fy:fy + fh, fx:fx + fw]
         le, re = eyes_detection(roi_gray, face)
         if le is not None and re is not None:
-            imgage = Image.open(path)
-            imgage = normalize_image(image_name, le, re)
-            imgage.save(ANALYSED_PATH + "/" + image_name)
+            image = Image.open(path)
+            image = normalize_image(image_name, le, re)
+            image.save(ANALYSED_PATH + "/" + image_name)
 
 def eyes_detection(image, face):
     (fx, fy, fw, fh) = face
@@ -126,8 +129,23 @@ def normalize_image(image_name, el, er):
     image = scale_image(image)
     return image
 
+def concat_image(actual=None, new=None):
+    if actual is None and new is None:
+        return None
+    if new is None:
+        return actual
+    new = cv.imread(new)
+    if actual is None:
+        return new
+    return cv.hconcat([actual, new])
 
 if __name__ == "__main__":
-    init_result_folder()
-    for img_name in get_images_list():
+    create_folder(ANALYSED_PATH)
+    for img_name in get_images_list(DATASET_PATH):
         face_detection(img_name)
+    create_folder(VECTOR_PATH)
+    image_vector = None
+    for img_name in get_images_list(ANALYSED_PATH):
+        path = ANALYSED_PATH + "/" + img_name
+        image_vector = concat_image(actual=image_vector, new=path)
+    cv.imwrite(VECTOR_PATH + "/" + IMAGE_VECTOR_NAME, image_vector)
