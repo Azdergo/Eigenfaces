@@ -98,5 +98,6 @@ if __name__ == "__main__":
     ids = getIdDirs()
     for id in ids:
         train(getImagesList(os.path.join(BDD_PATH, id))[:int(NB_IMAGE_PER_ID*0.7)])
-        
+    for id in ids:
+        main(getImagesList(os.path.join(BDD_PATH, id))[int(NB_IMAGE_PER_ID*0.7):])
 
