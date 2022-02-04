@@ -39,10 +39,10 @@ def getAllFaces(image_list):
             faces.append(image)
     return faces
 
-def train():
+def train(path_list):
     # Read images
-    images = readImages()
-
+    print("\t Lecture des images...")
+    images = readImages(path_list)
     print("\t Reconnaissance des visages...")
     imgWithfaces = getAllFaces(images)
     faces = labels = []
@@ -51,8 +51,9 @@ def train():
         faces.append(image.img)
         persons.append(image.personId)
         labels.append(i)
-        i += 1
-    recognizer.train(faces, np.array(labels))
+        i = i + 1
+    print("\t Entraînement du modèle avec les images...")
+    recognizer.train(faces, np.array(persons, dtype="object"))
 
 def prediction(input):
     image = copy(input)
@@ -65,19 +66,18 @@ def prediction(input):
     return image, name, confidence
 
 def getImagesList(id_path):
-    return [f for f in os.listdir(id_path) if os.path.isfile(os.path.join(id_path, f))]
+    return [os.path.join(id_path,f) for f in  os.listdir(id_path) if os.path.isfile(os.path.join(id_path, f))]
 
 def getIdDirs():
     return [d for d in os.listdir(BDD_PATH)]
 
-def readImages(path):
+def readImages(path_list):
     image_list = []
-    for root, subdirectories, files in os.walk(path):
-        for subdirectory in subdirectories:
-            imgPath = root + '/' + subdirectory + '/' + "*.jpg"
-            for filename in glob.glob(imgPath):
-                img = cv2.imread(filename)
-                image_list.append(Image(img, subdirectory, filename))
+    for path in path_list:
+        dirName = path.split("/")[-2]
+        fileName = path.split("/")[-1][:-4]
+        img = cv2.imread(path)
+        image_list.append(MyImage(img, dirName, fileName))
     return image_list
 
 def main(path):
@@ -85,10 +85,9 @@ def main(path):
     pathNormalizedImage = transform_image.faceDetection(path)
     img = cv2.imread(pathNormalizedImage)
     
-    splitted_path = pathNormalizedImage.split("/")
-    fileName = splitted_path[-1][:-4]
-    dirName = splitted_path[-2]
-    image = Image(img, dirName, fileName)
+    dirName = pathNormalizedImage.split("/")[-2]
+    image = MyImage(img, dirName, pathNormalizedImage)
+    
     prediction, confidence = prediction(image)
     print("Confidence: ", confidence)
     cv2.imshow("Resultat", cv2.resize(prediction, (400, 500)))
@@ -99,5 +98,6 @@ def main(path):
 if __name__ == "__main__":
     ids = getIdDirs()
     for id in ids:
-        print(getImagesList(id)[:int(NB_IMAGE_PER_ID*0.7)])
+        train(getImagesList(os.path.join(BDD_PATH, id))[:int(NB_IMAGE_PER_ID*0.7)])
+        
 
