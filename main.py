@@ -45,7 +45,8 @@ def train(path_list):
     images = readImages(path_list)
     print("\t Reconnaissance des visages...")
     imgWithfaces = getAllFaces(images)
-    faces = labels = []
+    faces =  []
+    labels = []
     i = 0
     for image in imgWithfaces:
         faces.append(image.img)
@@ -53,7 +54,8 @@ def train(path_list):
         labels.append(i)
         i = i + 1
     print("\t Entraînement du modèle avec les images...")
-    recognizer.train(faces, np.array(persons, dtype="object"))
+    recognizer.train(faces, np.array(labels))
+
 
 def getImagesList(id_path):
     return [os.path.join(id_path,f) for f in  os.listdir(id_path) if os.path.isfile(os.path.join(id_path, f))]
@@ -78,26 +80,34 @@ def predict(input):
     label, confidence = recognizer.predict(image.img)
     name = persons[label]
     image.img = cv2.imread(BDD_PATH + image.personId + image.fileName)
-    return image, name, confidence
+    return name, confidence
 
 def main(path):
-    train()
     pathNormalizedImage = transform_image.faceDetection(path)
-    img = cv2.imread(pathNormalizedImage)
-    
-    dirName = pathNormalizedImage.split("/")[-2]
-    image = MyImage(img, dirName, pathNormalizedImage)
-    
-    prediction, confidence = predict(image)
-    print("Confidence: ", confidence)
-    cv2.imshow("Resultat", cv2.resize(prediction, (400, 500)))
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    if pathNormalizedImage is not None:
+        img = cv2.imread(pathNormalizedImage)
+        
+        dirName = pathNormalizedImage.split("/")[-2]
+        image = MyImage(img, dirName, pathNormalizedImage)
+        
+        prediction, confidence = predict(image)
+        print("Confidence: ", confidence)
+        cv2.imshow("Resultat", cv2.resize(prediction, (400, 500)))
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 
 if __name__ == "__main__":
     ids = getIdDirs()
+    train_image_list = []
+    valid_image_list = []
     for id in ids:
-        train(getImagesList(os.path.join(BDD_PATH, id))[:int(NB_IMAGE_PER_ID*0.7)])
-    for id in ids:
-        main(getImagesList(os.path.join(BDD_PATH, id))[int(NB_IMAGE_PER_ID*0.7):])
+        new_train_list = getImagesList(os.path.join("./bdd", id))[:int(NB_IMAGE_PER_ID*0.7)]
+        for item in new_train_list:
+            train_image_list.append(item)
+        new_valid_list = getImagesList(os.path.join("./bdd", id))[int(NB_IMAGE_PER_ID*0.7):]
+        for item in new_valid_list:
+            valid_image_list.append(item)
+    train(train_image_list)
+    for image_path in valid_image_list:
+        main(image_path)
 

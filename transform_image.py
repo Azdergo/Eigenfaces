@@ -33,26 +33,22 @@ def createFolder(path):
     if not os.path.exists(path):
         os.makedirs(path)
 
-def faceDetection(imgName, directory = None, subdir = None):
+def faceDetection(path):
+    subdir = path.split("/")[-2]
+    imgName = path.split("/")[-1][:-4]
     normalizedImagePath = None
-    path = imgName
-    if subdir is not None:
-        path = os.path.join(subdir, path)
-    if directory is not None:
-        path = os.path.join(directory, path)
-    if os.path.isfile(path):
-        img = cv2.imread(path)
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        faces = FACE_CASCADE.detectMultiScale(gray, 1.1, 6)
-        if len(faces) > 0:
-            (fx, fy, fw, fh) = face = faces[0]
-            roi_gray = gray[fy:fy+fh, fx:fx+fw]
-            le, re = eyesDetection(roi_gray, face)
-            if le is not None and re is not None:
-                image = Image.open(path)
-                image = normalizeImage(path, le, re)
-                normalizedImagePath = os.path.join(ANALYSED_PATH, imgName)
-                image.save(normalizedImagePath)
+    img = cv2.imread(path)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    faces = FACE_CASCADE.detectMultiScale(gray, 1.1, 6)
+    if len(faces) > 0:
+        (fx, fy, fw, fh) = face = faces[0]
+        roi_gray = gray[fy:fy+fh, fx:fx+fw]
+        le, re = eyesDetection(roi_gray, face)
+        if le is not None and re is not None:
+            image = Image.open(path)
+            image = normalizeImage(path, le, re)
+            normalizedImagePath = os.path.join(ANALYSED_PATH, subdir + "/" + imgName + ".jpg")
+            image.save(normalizedImagePath)
     return normalizedImagePath
 
 def detectFace(image):
@@ -121,7 +117,7 @@ def main():
     createFolder(ANALYSED_PATH)
     
     for imgName in getImagesList(DATASET_PATH):
-        normalizedImagePath = faceDetection(imgName, DATASET_PATH)
+        normalizedImagePath = faceDetection(os.path.join(DATASET_PATH,imgName))
     
     
 if __name__ == "__main__":
