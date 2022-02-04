@@ -1,0 +1,72 @@
+import pathlib
+import tensorboard
+import tensorflow as tf
+import numpy as np
+from tensorflow.python.keras import layers
+import keras
+import cv2
+
+
+data_dir = pathlib.Path('./bdd')
+image_count = len(list(data_dir.glob('*/*')))
+print(image_count,"Images sont présentes dans la bdd")
+
+#Preparation des données d'entrainements
+train_data = tf.keras.preprocessing.image_dataset_from_directory(
+    data_dir,
+    validation_split=0.2,
+    subset="training",
+    seed=42,
+    batch_size = 8
+)
+
+#Preparation du jeux de validation
+val_data = tf.keras.preprocessing.image_dataset_from_directory(
+    data_dir,
+    validation_split=0.2,
+    subset = "validation",
+    seed = 42,
+    batch_size = 8
+) 
+
+#class_names = val_data.class_names
+#print(class_names)
+
+num_classes = len(np.concatenate([i for x, i in val_data], axis=0))
+print("HHSDFGTHMFGLKJHLSKDGHJFDOISLKGJHLDPÖ")
+print(num_classes)
+model = tf.keras.Sequential([
+    tf.keras.layers.experimental.preprocessing.Resizing(64,64), #Image uniforme
+    tf.keras.layers.experimental.preprocessing.Rescaling(1./255), #Normalisé les valeurs des pixels
+    #layers.Resizing(64,64),
+    #layers.Rescaling(1./255),
+    #layers.Conv2D(64, (3, 3), activation='relu'), 
+    #layers.MaxPooling2D((2, 2)), #
+    #layers.Flatten(), 
+
+    #layers.Dense(num_classes,activation='sigmoid'), 
+    layers.Conv2D(64, (3, 3), activation='relu', input_shape=(178,218,3)),
+    layers.MaxPool2D(),
+    layers.Flatten(),
+    layers.Dense(15,activation='softmax')
+])
+
+model.compile(optimizer= 'adam', loss= tf.losses.SparseCategoricalCrossentropy (from_logits=True), metrics=['accuracy'] )
+
+logdir = "logs"
+
+tensorboard_callback = keras.callbacks.TensorBoard(log_dir=logdir, histogram_freq=1, write_images=logdir, embeddings_data=train_data)
+
+model.fit(
+    train_data,
+    validation_data=val_data,
+    epochs=20,
+    callbacks=[tensorboard_callback]
+)
+
+#file_to_predict = './topredict'
+#for file in file_to_predict:
+#   img_to_predict = cv2.imread(file,cv2.IMREAD_COLOR)
+ #   res = model.predict_classes(img_to_predict)
+  #  print(model.predict_classes(img_to_predict))
+   # print(model.preditc(img_to_predict))
