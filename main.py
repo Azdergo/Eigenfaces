@@ -55,16 +55,6 @@ def train(path_list):
     print("\t Entraînement du modèle avec les images...")
     recognizer.train(faces, np.array(persons, dtype="object"))
 
-def prediction(input):
-    image = copy(input)
-    imageAfterDetection, face = transform_image.detectFace(image)
-    if face is None:
-        return None
-    label, confidence = recognizer.predict(image.img)
-    name = persons[label]
-    image.img = cv2.imread(BDD_PATH + image.personId + image.fileName)
-    return image, name, confidence
-
 def getImagesList(id_path):
     return [os.path.join(id_path,f) for f in  os.listdir(id_path) if os.path.isfile(os.path.join(id_path, f))]
 
@@ -80,6 +70,16 @@ def readImages(path_list):
         image_list.append(MyImage(img, dirName, fileName))
     return image_list
 
+def predict(input):
+    image = copy(input)
+    imageAfterDetection, face = transform_image.detectFace(image)
+    if face is None:
+        return None
+    label, confidence = recognizer.predict(image.img)
+    name = persons[label]
+    image.img = cv2.imread(BDD_PATH + image.personId + image.fileName)
+    return image, name, confidence
+
 def main(path):
     train()
     pathNormalizedImage = transform_image.faceDetection(path)
@@ -88,12 +88,11 @@ def main(path):
     dirName = pathNormalizedImage.split("/")[-2]
     image = MyImage(img, dirName, pathNormalizedImage)
     
-    prediction, confidence = prediction(image)
+    prediction, confidence = predict(image)
     print("Confidence: ", confidence)
     cv2.imshow("Resultat", cv2.resize(prediction, (400, 500)))
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-
 
 if __name__ == "__main__":
     ids = getIdDirs()
